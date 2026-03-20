@@ -6,45 +6,36 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"curler/internal/config"
 	"curler/internal/executor"
 )
 
-func TestSaveCurrentRenamesRequest(t *testing.T) {
+func TestSummaryIsReadOnlyAndUsesYAMLSource(t *testing.T) {
 	path := filepath.Join(t.TempDir(), config.FileName)
-	file := config.Default()
-	if err := config.SavePath(path, file); err != nil {
-		t.Fatalf("save config: %v", err)
-	}
-
-	model := newModel(path, file, func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
+	m := newModel(path, config.Default(), func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
 		return &executor.Response{}, nil
 	})
-	model.collectionInput.SetValue("admin")
-	model.nameInput.SetValue("health")
-	model.urlInput.SetValue("${BASE_URL}/health")
-	model.methodInput.SetValue("GET")
-	model.activeEnvInput.SetValue("local")
 
-	if err := model.saveCurrent(); err != nil {
-		t.Fatalf("save current: %v", err)
+	summary := m.renderSummary()
+	if !strings.Contains(summary, "Summary (read-only)") {
+		t.Fatalf("expected read-only summary, got %q", summary)
 	}
-
-	loaded, err := config.LoadPath(path)
-	if err != nil {
-		t.Fatalf("load config: %v", err)
+	if !strings.Contains(summary, "Edit in YAML: "+path) {
+		t.Fatalf("expected yaml path in summary, got %q", summary)
 	}
-	if _, _, _, err := loaded.GetRequest("admin/health"); err != nil {
-		t.Fatalf("expected renamed request: %v", err)
+	if !strings.Contains(summary, "Selected: default/users") {
+		t.Fatalf("expected selected request in summary, got %q", summary)
 	}
 }
 
-func TestRunCurrentUsesEditedDraft(t *testing.T) {
+func TestRunSelectedUsesSavedRequestAndRendersResponse(t *testing.T) {
 	path := filepath.Join(t.TempDir(), config.FileName)
 	file := config.Default()
 
 	var captured *executor.ResolvedRequest
-	model := newModel(path, file, func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
+	m := newModel(path, file, func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
 		captured = request
 		return &executor.Response{
 			Status:      "200 OK",
@@ -54,17 +45,9 @@ func TestRunCurrentUsesEditedDraft(t *testing.T) {
 		}, nil
 	})
 
-	model.collectionInput.SetValue("default")
-	model.nameInput.SetValue("users")
-	model.methodInput.SetValue("POST")
-	model.urlInput.SetValue("${BASE_URL}/users")
-	model.bodyModeInput.SetValue(config.BodyModeJSON)
-	model.bodyInput.SetValue(`{"hello":"world"}`)
-	model.activeEnvInput.SetValue("local")
-
-	cmd, err := model.runCurrent()
+	cmd, err := m.runSelected()
 	if err != nil {
-		t.Fatalf("run current: %v", err)
+		t.Fatalf("run selected: %v", err)
 	}
 
 	msg := cmd()
@@ -76,15 +59,97 @@ func TestRunCurrentUsesEditedDraft(t *testing.T) {
 		t.Fatalf("unexpected run error: %v", result.err)
 	}
 	if captured == nil {
-		t.Fatal("expected request to be executed")
+		t.Fatal("expected selected request to be executed")
 	}
-	if captured.Method != "POST" {
-		t.Fatalf("expected POST, got %s", captured.Method)
+	if captured.Method != "GET" {
+		t.Fatalf("expected GET, got %s", captured.Method)
 	}
-	if captured.Body.Content != `{"hello":"world"}` {
-		t.Fatalf("unexpected body %s", captured.Body.Content)
+	if !strings.Contains(captured.URL, "/users") {
+		t.Fatalf("expected request URL to include /users, got %s", captured.URL)
 	}
 	if !strings.Contains(result.rendered, "\"ok\": true") {
 		t.Fatalf("expected formatted response, got %s", result.rendered)
+	}
+}
+
+func TestResponsePaneScrollsWhenFocused(t *testing.T) {
+	m := newModel(filepath.Join(t.TempDir(), config.FileName), config.Default(), func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
+		return &executor.Response{}, nil
+	})
+
+	m.width = 120
+	m.height = 40
+	m.resize()
+	m.focus = paneResponse
+
+	lines := make([]string, 0, 80)
+	for i := 0; i < 80; i++ {
+		lines = append(lines, "line "+strings.Repeat("x", 10))
+	}
+	m.resetResponse(strings.Join(lines, "\n"))
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	scrolled := updated.(*model)
+	if scrolled.responseView.YOffset == 0 {
+		t.Fatal("expected response viewport to scroll down")
+	}
+}
+
+func TestSelectionChangeResetsStaleResponse(t *testing.T) {
+	file := config.Default()
+	file.UpsertRequest("default", "health", &config.RequestDef{
+		Method: "GET",
+		URL:    "${BASE_URL}/health",
+	})
+
+	m := newModel(filepath.Join(t.TempDir(), config.FileName), file, func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
+		return &executor.Response{}, nil
+	})
+	m.width = 120
+	m.height = 40
+	m.resize()
+
+	m.resetResponse("old response")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	next := updated.(*model)
+
+	if next.currentRef() != "default/users" {
+		t.Fatalf("expected current ref to move to default/users, got %q", next.currentRef())
+	}
+
+	updated, _ = next.Update(tea.KeyMsg{Type: tea.KeyUp})
+	next = updated.(*model)
+	if !strings.Contains(next.responseView.View(), "Selected") {
+		t.Fatalf("expected placeholder response after selection changes, got %q", next.responseView.View())
+	}
+}
+
+func TestEnterRunsRequestFromListFocus(t *testing.T) {
+	m := newModel(filepath.Join(t.TempDir(), config.FileName), config.Default(), func(ctx context.Context, request *executor.ResolvedRequest) (*executor.Response, error) {
+		return &executor.Response{
+			Status:      "200 OK",
+			StatusCode:  200,
+			Body:        []byte(`{"ok":true}`),
+			ContentType: "application/json",
+		}, nil
+	})
+	m.width = 120
+	m.height = 40
+	m.resize()
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	running := updated.(*model)
+	if !running.busy {
+		t.Fatal("expected enter to start the request")
+	}
+
+	msg := cmd()
+	finalModel, _ := running.Update(msg)
+	done := finalModel.(*model)
+	if done.focus != paneResponse {
+		t.Fatal("expected response pane to be focused after a run")
+	}
+	if !strings.Contains(done.responseView.View(), "\"ok\": true") {
+		t.Fatalf("expected rendered response in viewport, got %q", done.responseView.View())
 	}
 }
