@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Local curler project data
+.curler.yaml
+
+# Go build outputs
+/curler
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+*.prof
+
+# Vendored dependency artifacts
+/vendor/
