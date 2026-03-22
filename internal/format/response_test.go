@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"curler/internal/executor"
+	"postack/internal/executor"
 )
 
 func TestRenderResponsePrettyPrintsJSON(t *testing.T) {

@@ -1,14 +1,14 @@
-# curler
+# postack
 
-`curler` is a lightweight API client for the terminal. It gives you a small
+`postack` is a lightweight API client for the terminal. It gives you a small
 Postman-like workflow with a project-local YAML file, a terminal UI, and a
 scriptable CLI for running saved requests.
 
 ## Features
 
-- repo-local `.curler.yaml` config
+- repo-local `.postack.yaml` config
 - interactive Bubble Tea TUI
-- `curler init`, `curler list`, and `curler run`
+- `postack init`, `postack list`, and `postack run`
 - environment interpolation with `${VAR}`
 - auth modes: `none`, `bearer`, `basic`
 - body modes: `none`, `json`, `raw`
@@ -27,7 +27,7 @@ scriptable CLI for running saved requests.
 3. Build the binary:
 
    ```bash
-   go build -o curler ./cmd/curler
+   go build -o postack ./cmd/postack
    ```
 
 ## Quick Start
@@ -35,36 +35,39 @@ scriptable CLI for running saved requests.
 Initialize a new config in your current directory:
 
 ```bash
-./curler init
+./postack init
 ```
 
 Open the TUI:
 
 ```bash
-./curler
+./postack
 ```
 
 List saved requests:
 
 ```bash
-./curler list
+./postack list
 ```
 
 Run a saved request:
 
 ```bash
-./curler run default/users
+./postack run default/users
 ```
 
 ## Config Discovery
 
-`curler` looks for `.curler.yaml` in the current directory and then walks up the
-directory tree until it finds one. That means you can run `curler` from nested
-folders inside a repo and it will still find the nearest project config.
+`postack` looks for `.postack.yaml` in the current directory and then walks up
+the directory tree until it finds one. For backwards compatibility it will also
+read a legacy `.curler.yaml` if no `.postack.yaml` is found.
+
+That means you can run `postack` from nested folders inside a repo and it will
+still find the nearest project config.
 
 ## Config Schema
 
-`curler` stores everything in a single YAML file:
+`postack` stores everything in a single YAML file:
 
 ```yaml
 version: 1
@@ -94,7 +97,7 @@ collections:
 Top-level keys:
 
 - `version`: config schema version, currently `1`
-- `active_env`: default environment used by the TUI and `curler run`
+- `active_env`: default environment used by the TUI and `postack run`
 - `environments.<env>`: key/value pairs used for `${VAR}` interpolation
 - `collections.<collection>.requests.<request>`: saved request definitions
 
@@ -310,15 +313,15 @@ will fail with an interpolation error.
 
 ## CLI Commands
 
-### `curler`
+### `postack`
 
-Launch the TUI using the nearest `.curler.yaml`.
+Launch the TUI using the nearest `.postack.yaml`.
 
-### `curler init`
+### `postack init`
 
-Create a starter `.curler.yaml` in the current directory.
+Create a starter `.postack.yaml` in the current directory.
 
-### `curler list`
+### `postack list`
 
 Print every saved request ref in `collection/request` form.
 
@@ -330,7 +333,7 @@ default/users
 admin/audit-log
 ```
 
-### `curler run <collection/request>`
+### `postack run <collection/request>`
 
 Run a saved request without opening the TUI.
 
@@ -347,20 +350,20 @@ Supported flags:
 You can place the request ref before or after the flags:
 
 ```bash
-./curler run default/users --env staging
-./curler run --env staging default/users
+./postack run default/users --env staging
+./postack run --env staging default/users
 ```
 
 CLI examples:
 
 ```bash
-./curler run default/health
-./curler run default/users --env staging
-./curler run default/users --header "X-Debug: 1" --header "X-Trace-Id: abc123"
-./curler run default/users --query "page=2" --query "limit=50"
-./curler run default/create-user --body '{"name":"Grace"}'
-./curler run default/create-user --timeout 10s
-./curler run default/users --output ./users.json
+./postack run default/health
+./postack run default/users --env staging
+./postack run default/users --header "X-Debug: 1" --header "X-Trace-Id: abc123"
+./postack run default/users --query "page=2" --query "limit=50"
+./postack run default/create-user --body '{"name":"Grace"}'
+./postack run default/create-user --timeout 10s
+./postack run default/users --output ./users.json
 ```
 
 CLI override precedence is:
@@ -378,41 +381,24 @@ Notes:
 
 ## TUI Usage
 
-Running `./curler` opens the terminal UI.
+Running `./postack` opens the terminal UI.
 
 Layout:
 
 - left pane: saved request list
-- upper-right pane: request editor
+- upper-right pane: request summary
 - lower-right pane: response viewer
 
 Key bindings:
 
 - `q` or `Ctrl+C`: quit
-- `Up` / `Down`: move through saved requests when the list is focused
-- `Enter`: move from the list into the editor
-- `Esc`: move back to the list
-- `Tab`: next field
-- `Shift+Tab`: previous field
-- `Ctrl+S`: save the current request
-- `Ctrl+R`: run the current request
-- `n`: start a new request draft
+- `Up` / `Down`: move through saved requests
+- `Enter` or `Ctrl+R`: run the selected request
+- `Tab`: focus the response pane
+- `Esc`: move focus back to the request list
+- response pane: `Up`, `Down`, `PgUp`, `PgDn`, or mouse wheel to scroll
 
-Editable fields in the TUI:
-
-- active environment
-- collection
-- request name
-- method
-- URL
-- timeout
-- auth type
-- basic auth username/password
-- bearer token
-- body mode
-- headers
-- query params
-- body content
+Requests are read-only in the TUI. Edit `.postack.yaml` to change requests.
 
 ## Response Rendering
 
@@ -432,12 +418,14 @@ Body rendering behavior:
 For binary or large responses, use:
 
 ```bash
-./curler run default/users --output ./response.bin
+./postack run default/users --output ./response.bin
 ```
 
 ## Notes
 
-- `.curler.yaml` can contain secrets in plaintext.
-- Starter configs created by `curler init` include demo values for `local` and
+- `.postack.yaml` can contain secrets in plaintext.
+- Starter configs created by `postack init` include demo values for `local` and
   `staging`.
+- `postack` will still read a legacy `.curler.yaml` if no `.postack.yaml` is
+  present.
 - Request refs must be written as `collection/request`.

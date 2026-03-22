@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"curler/internal/executor"
+	"postack/internal/executor"
 )
 
 func RenderResponse(response *executor.Response) string {

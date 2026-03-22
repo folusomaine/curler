@@ -29,6 +29,22 @@ func TestFindPathWalksUpDirectories(t *testing.T) {
 	}
 }
 
+func TestFindPathFallsBackToLegacyConfigName(t *testing.T) {
+	root := t.TempDir()
+	legacyPath := filepath.Join(root, LegacyFileName)
+	if err := SavePath(legacyPath, Default()); err != nil {
+		t.Fatalf("save legacy config: %v", err)
+	}
+
+	found, err := FindPath(root)
+	if err != nil {
+		t.Fatalf("find path: %v", err)
+	}
+	if found != legacyPath {
+		t.Fatalf("expected %s, got %s", legacyPath, found)
+	}
+}
+
 func TestInterpolateStringReportsMissingVariables(t *testing.T) {
 	_, err := InterpolateString("${BASE_URL}/users/${USER_ID}", map[string]string{"BASE_URL": "https://example.com"})
 	if err == nil {

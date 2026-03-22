@@ -10,9 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"curler/internal/config"
-	"curler/internal/executor"
-	"curler/internal/format"
+	"postack/internal/config"
+	"postack/internal/executor"
+	"postack/internal/format"
 )
 
 type pane int
@@ -67,7 +67,7 @@ func newModel(path string, file *config.File, runner runnerFunc) *model {
 
 	m.refreshRefs()
 	if len(m.refs) == 0 {
-		m.status = "no saved requests found; add them in .curler.yaml"
+		m.status = "no saved requests found; add them in your postack YAML config"
 	}
 	m.resetResponse(m.responsePlaceholder())
 	return m
@@ -110,7 +110,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	if m.width == 0 || m.height == 0 {
-		return "Loading curler..."
+		return "Loading postack..."
 	}
 
 	leftWidth := maxInt(28, m.width/4)
@@ -214,7 +214,7 @@ func (m *model) renderList() string {
 		lines = append(lines,
 			"No saved requests yet.",
 			"",
-			"Add requests to .curler.yaml and reopen curler.",
+			"Add requests to your YAML config and reopen postack.",
 		)
 		return strings.Join(lines, "\n")
 	}
@@ -234,7 +234,7 @@ func (m *model) renderSummary() string {
 	lines := []string{m.panelHeader("Summary (read-only)", false), ""}
 
 	if len(m.refs) == 0 {
-		lines = append(lines, "No request selected.", "", "Edit .curler.yaml to add requests.")
+		lines = append(lines, "No request selected.", "", "Edit your YAML config to add requests.")
 		return strings.Join(lines, "\n")
 	}
 
@@ -314,7 +314,7 @@ func (m *model) renderBodySummary(body config.BodyConfig) []string {
 	previewLines := strings.Split(content, "\n")
 	if len(previewLines) > 6 {
 		previewLines = previewLines[:6]
-		previewLines = append(previewLines, "... (edit .curler.yaml for the full body)")
+		previewLines = append(previewLines, "... (edit the YAML config for the full body)")
 	}
 	for _, line := range previewLines {
 		lines = append(lines, "  "+line)
@@ -375,7 +375,7 @@ func (m *model) runSelected() (tea.Cmd, error) {
 
 func (m *model) onSelectionChanged() {
 	m.resetResponse(m.responsePlaceholder())
-	m.status = "selected " + m.currentRef() + " • press enter or ctrl+r to run • edit .curler.yaml to modify it"
+	m.status = "selected " + m.currentRef() + " • press enter or ctrl+r to run • edit the YAML config to modify it"
 }
 
 func (m *model) currentRef() string {
@@ -387,7 +387,7 @@ func (m *model) currentRef() string {
 
 func (m *model) responsePlaceholder() string {
 	if len(m.refs) == 0 {
-		return "No requests available.\n\nEdit .curler.yaml to add requests, then reopen curler."
+		return "No requests available.\n\nEdit your YAML config to add requests, then reopen postack."
 	}
 	return fmt.Sprintf(
 		"Selected %s.\n\nThis screen is read-only.\nEdit %s to change requests.\n\nPress Enter or Ctrl+R to run the request.\nUse Tab to focus this pane, then arrows, PgUp/PgDn, or the mouse wheel to scroll the response.",

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"curler/internal/config"
-	"curler/internal/executor"
+	"postack/internal/config"
+	"postack/internal/executor"
 )
 
 func TestRunInitCreatesConfig(t *testing.T) {

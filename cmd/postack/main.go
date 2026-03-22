@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"curler/internal/cli"
+	"postack/internal/cli"
 )
 
 func main() {

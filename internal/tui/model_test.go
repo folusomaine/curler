@@ -8,8 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"curler/internal/config"
-	"curler/internal/executor"
+	"postack/internal/config"
+	"postack/internal/executor"
 )
 
 func TestSummaryIsReadOnlyAndUsesYAMLSource(t *testing.T) {

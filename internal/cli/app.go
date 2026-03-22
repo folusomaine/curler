@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"curler/internal/config"
-	"curler/internal/executor"
-	"curler/internal/format"
-	"curler/internal/tui"
+	"postack/internal/config"
+	"postack/internal/executor"
+	"postack/internal/format"
+	"postack/internal/tui"
 )
 
 type App struct {
@@ -75,6 +75,14 @@ func (a *App) runInit(args []string) int {
 		fmt.Fprintf(a.stderr, "failed to inspect %s: %v\n", path, err)
 		return 1
 	}
+	legacyPath := filepath.Join(a.cwd, config.LegacyFileName)
+	if _, err := os.Stat(legacyPath); err == nil {
+		fmt.Fprintf(a.stderr, "%s already exists; rename it to %s or remove it before running `postack init`\n", legacyPath, config.FileName)
+		return 1
+	} else if !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(a.stderr, "failed to inspect %s: %v\n", legacyPath, err)
+		return 1
+	}
 
 	if err := config.SavePath(path, config.Default()); err != nil {
 		fmt.Fprintf(a.stderr, "failed to write %s: %v\n", path, err)
@@ -95,7 +103,7 @@ func (a *App) runList(args []string) int {
 	file, _, err := config.LoadFromDir(a.cwd)
 	if err != nil {
 		if errors.Is(err, config.ErrConfigNotFound) {
-			fmt.Fprintf(a.stderr, "no %s found. Run `curler init` first.\n", config.FileName)
+			fmt.Fprintf(a.stderr, "no %s found. Run `postack init` first.\n", config.FileName)
 			return 1
 		}
 		fmt.Fprintf(a.stderr, "failed to load config: %v\n", err)
@@ -138,13 +146,13 @@ func (a *App) runRun(args []string) int {
 	}
 	if refArg == "" {
 		if flags.NArg() != 1 {
-			fmt.Fprintf(a.stderr, "usage: curler run <collection/request> [flags]\n")
+			fmt.Fprintf(a.stderr, "usage: postack run <collection/request> [flags]\n")
 			return 1
 		}
 		refArg = flags.Arg(0)
 	}
 	if flags.NArg() > 1 {
-		fmt.Fprintf(a.stderr, "usage: curler run <collection/request> [flags]\n")
+		fmt.Fprintf(a.stderr, "usage: postack run <collection/request> [flags]\n")
 		return 1
 	}
 
@@ -229,7 +237,7 @@ func (a *App) runTUICommand() int {
 	file, path, err := config.LoadFromDir(a.cwd)
 	if err != nil {
 		if errors.Is(err, config.ErrConfigNotFound) {
-			fmt.Fprintf(a.stderr, "no %s found. Run `curler init` first.\n", config.FileName)
+			fmt.Fprintf(a.stderr, "no %s found. Run `postack init` first.\n", config.FileName)
 			return 1
 		}
 		fmt.Fprintf(a.stderr, "failed to load config: %v\n", err)

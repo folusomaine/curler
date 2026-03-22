@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"curler/internal/config"
+	"postack/internal/config"
 )
 
 func TestPrepareRequestInterpolatesAndOverrides(t *testing.T) {
@@ -82,7 +82,7 @@ func TestExecuteBearerJSONRequest(t *testing.T) {
 		},
 		Body: config.BodyConfig{
 			Mode:    config.BodyModeJSON,
-			Content: `{"name":"curler"}`,
+			Content: `{"name":"postack"}`,
 		},
 		Timeout: time.Second,
 	})

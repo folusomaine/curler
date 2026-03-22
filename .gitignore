@@ -1,10 +1,12 @@
 # macOS
 .DS_Store
 
-# Local curler project data
+# Local postack project data
+.postack.yaml
 .curler.yaml
 
 # Go build outputs
+/postack
 /curler
 /bin/
 /build/

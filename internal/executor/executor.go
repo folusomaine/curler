@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"curler/internal/config"
+	"postack/internal/config"
 )
 
 const defaultTimeout = 30 * time.Second

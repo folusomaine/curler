@@ -1,4 +1,4 @@
-module curler
+module postack
 
 go 1.24.2
 
