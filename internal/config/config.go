@@ -14,7 +14,6 @@ import (
 
 const (
 	FileName        = ".postack.yaml"
-	LegacyFileName  = ".curler.yaml"
 	DefaultTimeout  = "30s"
 	AuthTypeNone    = "none"
 	AuthTypeBearer  = "bearer"
@@ -106,15 +105,13 @@ func FindPath(startDir string) (string, error) {
 	}
 
 	for {
-		for _, name := range []string{FileName, LegacyFileName} {
-			candidate := filepath.Join(dir, name)
-			info, err := os.Stat(candidate)
-			if err == nil && !info.IsDir() {
-				return candidate, nil
-			}
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return "", err
-			}
+		candidate := filepath.Join(dir, FileName)
+		info, err := os.Stat(candidate)
+		if err == nil && !info.IsDir() {
+			return candidate, nil
+		}
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return "", err
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {

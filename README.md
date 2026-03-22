@@ -59,8 +59,7 @@ Run a saved request:
 ## Config Discovery
 
 `postack` looks for `.postack.yaml` in the current directory and then walks up
-the directory tree until it finds one. For backwards compatibility it will also
-read a legacy `.curler.yaml` if no `.postack.yaml` is found.
+the directory tree until it finds one.
 
 That means you can run `postack` from nested folders inside a repo and it will
 still find the nearest project config.
@@ -426,6 +425,4 @@ For binary or large responses, use:
 - `.postack.yaml` can contain secrets in plaintext.
 - Starter configs created by `postack init` include demo values for `local` and
   `staging`.
-- `postack` will still read a legacy `.curler.yaml` if no `.postack.yaml` is
-  present.
 - Request refs must be written as `collection/request`.

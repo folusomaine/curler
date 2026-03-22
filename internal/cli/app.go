@@ -75,14 +75,6 @@ func (a *App) runInit(args []string) int {
 		fmt.Fprintf(a.stderr, "failed to inspect %s: %v\n", path, err)
 		return 1
 	}
-	legacyPath := filepath.Join(a.cwd, config.LegacyFileName)
-	if _, err := os.Stat(legacyPath); err == nil {
-		fmt.Fprintf(a.stderr, "%s already exists; rename it to %s or remove it before running `postack init`\n", legacyPath, config.FileName)
-		return 1
-	} else if !errors.Is(err, os.ErrNotExist) {
-		fmt.Fprintf(a.stderr, "failed to inspect %s: %v\n", legacyPath, err)
-		return 1
-	}
 
 	if err := config.SavePath(path, config.Default()); err != nil {
 		fmt.Fprintf(a.stderr, "failed to write %s: %v\n", path, err)
