@@ -1,0 +1,122 @@
+[
+  {
+    "userId": 3,
+    "id": 1,
+    "title": "Buy groceries",
+    "completed": false
+  },
+  {
+    "userId": 5,
+    "id": 2,
+    "title": "Go for a walk",
+    "completed": true
+  },
+  {
+    "userId": 1,
+    "id": 3,
+    "title": "Finish homework",
+    "completed": false
+  },
+  {
+    "userId": 7,
+    "id": 4,
+    "title": "Read a book",
+    "completed": true
+  },
+  {
+    "userId": 2,
+    "id": 5,
+    "title": "Pay bills",
+    "completed": false
+  },
+  {
+    "userId": 4,
+    "id": 6,
+    "title": "Call a friend",
+    "completed": true
+  },
+  {
+    "userId": 6,
+    "id": 7,
+    "title": "Clean the house",
+    "completed": false
+  },
+  {
+    "userId": 9,
+    "id": 8,
+    "title": "Go to the gym",
+    "completed": true
+  },
+  {
+    "userId": 8,
+    "id": 9,
+    "title": "Write a report",
+    "completed": false
+  },
+  {
+    "userId": 2,
+    "id": 10,
+    "title": "Cook dinner",
+    "completed": true
+  },
+  {
+    "userId": 1,
+    "id": 11,
+    "title": "Study for exams",
+    "completed": false
+  },
+  {
+    "userId": 3,
+    "id": 12,
+    "title": "Do laundry",
+    "completed": true
+  },
+  {
+    "userId": 5,
+    "id": 13,
+    "title": "Practice guitar",
+    "completed": false
+  },
+  {
+    "userId": 7,
+    "id": 14,
+    "title": "Plan a trip",
+    "completed": true
+  },
+  {
+    "userId": 9,
+    "id": 15,
+    "title": "Attend a meeting",
+    "completed": false
+  },
+  {
+    "userId": 6,
+    "id": 16,
+    "title": "Water the plants",
+    "completed": true
+  },
+  {
+    "userId": 4,
+    "id": 17,
+    "title": "Fix the car",
+    "completed": false
+  },
+  {
+    "userId": 8,
+    "id": 18,
+    "title": "Watch a movie",
+    "completed": true
+  },
+  {
+    "userId": 10,
+    "id": 19,
+    "title": "Visit the museum",
+    "completed": false
+  },
+  {
+    "userId": 1,
+    "id": 20,
+    "title": "Send an email",
+    "completed": true
+  }
+]

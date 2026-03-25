@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"postack/internal/config"
@@ -48,16 +49,46 @@ func (a *App) Run(args []string) int {
 	}
 
 	switch args[0] {
-	case "init":
+	case "-h", "--help", "help":
+		a.printHelp()
+		return 0
+	case "init", "i":
 		return a.runInit(args[1:])
-	case "list":
+	case "list", "l":
 		return a.runList(args[1:])
-	case "run":
+	case "run", "r":
 		return a.runRun(args[1:])
 	default:
 		fmt.Fprintf(a.stderr, "unknown command %q\n", args[0])
 		return 1
 	}
+}
+
+func (a *App) printHelp() {
+	fmt.Fprintln(a.stdout, "Usage:")
+	fmt.Fprintln(a.stdout, "  postack <command> [arguments]")
+	fmt.Fprintln(a.stdout)
+	fmt.Fprintln(a.stdout, "Commands:")
+	fmt.Fprintln(a.stdout, "  init, i    create a postack.yaml config in the current directory")
+	fmt.Fprintln(a.stdout, "  list, l    list saved request references")
+	fmt.Fprintln(a.stdout, "  run, r     run a saved request or `all`")
+	fmt.Fprintln(a.stdout)
+	fmt.Fprintln(a.stdout, "Top-level flags:")
+	fmt.Fprintln(a.stdout, "  -h, --help    show this help summary")
+	fmt.Fprintln(a.stdout)
+	fmt.Fprintln(a.stdout, "Run examples:")
+	fmt.Fprintln(a.stdout, "  postack run default/users")
+	fmt.Fprintln(a.stdout, "  postack r all")
+	fmt.Fprintln(a.stdout, "  postack r default/users -o response.json")
+	fmt.Fprintln(a.stdout)
+	fmt.Fprintln(a.stdout, "Run flags:")
+	fmt.Fprintln(a.stdout, "  -e, --env")
+	fmt.Fprintln(a.stdout, "  -H, --header")
+	fmt.Fprintln(a.stdout, "  -q, --query")
+	fmt.Fprintln(a.stdout, "  -b, --body")
+	fmt.Fprintln(a.stdout, "  -t, --timeout")
+	fmt.Fprintln(a.stdout, "  -o, --output")
+	fmt.Fprintln(a.stdout, "  -s, --status-only")
 }
 
 func (a *App) runInit(args []string) int {
@@ -119,13 +150,22 @@ func (a *App) runRun(args []string) int {
 	var body string
 	var timeout string
 	var outputPath string
+	var statusOnly bool
 
 	flags.StringVar(&envName, "env", "", "environment name")
+	flags.StringVar(&envName, "e", "", "environment name (shorthand)")
 	flags.Var(&headerValues, "header", "repeatable header override in Key: Value form")
+	flags.Var(&headerValues, "H", "repeatable header override in Key: Value form (shorthand)")
 	flags.Var(&queryValues, "query", "repeatable query override in key=value form")
+	flags.Var(&queryValues, "q", "repeatable query override in key=value form (shorthand)")
 	flags.StringVar(&body, "body", "", "raw body override")
+	flags.StringVar(&body, "b", "", "raw body override (shorthand)")
 	flags.StringVar(&timeout, "timeout", "", "timeout override (for example 5s)")
-	flags.StringVar(&outputPath, "output", "", "write response body to a file")
+	flags.StringVar(&timeout, "t", "", "timeout override (for example 5s) (shorthand)")
+	flags.StringVar(&outputPath, "output", "", "write response body to a file instead of stdout")
+	flags.StringVar(&outputPath, "o", "", "write response body to a file instead of stdout (shorthand)")
+	flags.BoolVar(&statusOnly, "status-only", false, "print only the response status code")
+	flags.BoolVar(&statusOnly, "s", false, "print only the response status code (shorthand)")
 
 	refArg := ""
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -154,18 +194,22 @@ func (a *App) runRun(args []string) int {
 		return 1
 	}
 
-	_, _, request, err := file.GetRequest(refArg)
-	if err != nil {
-		fmt.Fprintf(a.stderr, "failed to resolve request: %v\n", err)
-		return 1
-	}
-
 	if envName == "" {
 		envName = file.ActiveEnv
 	}
 	env, err := file.Environment(envName)
 	if err != nil {
 		fmt.Fprintf(a.stderr, "failed to resolve environment: %v\n", err)
+		return 1
+	}
+
+	if refArg == "all" {
+		return a.runAllRequests(file, env)
+	}
+
+	_, _, request, err := file.GetRequest(refArg)
+	if err != nil {
+		fmt.Fprintf(a.stderr, "failed to resolve request: %v\n", err)
 		return 1
 	}
 
@@ -216,13 +260,74 @@ func (a *App) runRun(args []string) int {
 			fmt.Fprintf(a.stderr, "failed to write response body: %v\n", err)
 			return 1
 		}
+		fmt.Fprintln(a.stdout, outputPath)
+		return 0
 	}
 
-	fmt.Fprintln(a.stdout, format.RenderResponse(response))
-	if outputPath != "" {
-		fmt.Fprintf(a.stdout, "\n\nsaved body to %s\n", outputPath)
+	if statusOnly {
+		fmt.Fprintln(a.stdout, response.StatusCode)
+	} else {
+		fmt.Fprintln(a.stdout, format.RenderResponse(response))
 	}
 	return 0
+}
+
+type runAllResult struct {
+	endpoint string
+	result   string
+}
+
+func (a *App) runAllRequests(file *config.File, env map[string]string) int {
+	refs := file.ListRefs()
+	results := make([]runAllResult, 0, len(refs))
+
+	for _, ref := range refs {
+		_, _, request, err := file.GetRequest(ref)
+		if err != nil {
+			results = append(results, runAllResult{
+				endpoint: ref,
+				result:   "error: " + err.Error(),
+			})
+			continue
+		}
+
+		resolved, err := executor.PrepareRequest(request, env, executor.OverrideOptions{})
+		if err != nil {
+			results = append(results, runAllResult{
+				endpoint: ref,
+				result:   "error: " + err.Error(),
+			})
+			continue
+		}
+
+		response, err := a.execute(context.Background(), resolved)
+		if err != nil {
+			results = append(results, runAllResult{
+				endpoint: ref,
+				result:   "error: " + err.Error(),
+			})
+			continue
+		}
+
+		results = append(results, runAllResult{
+			endpoint: ref,
+			result:   fmt.Sprintf("%d", response.StatusCode),
+		})
+	}
+
+	fmt.Fprintln(a.stdout, renderRunAllResults(results))
+	return 0
+}
+
+func renderRunAllResults(results []runAllResult) string {
+	var builder strings.Builder
+	writer := tabwriter.NewWriter(&builder, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(writer, "ENDPOINT\tRESULT")
+	for _, result := range results {
+		fmt.Fprintf(writer, "%s\t%s\n", result.endpoint, result.result)
+	}
+	_ = writer.Flush()
+	return strings.TrimSpace(builder.String())
 }
 
 func (a *App) runTUICommand() int {

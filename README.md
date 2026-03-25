@@ -345,6 +345,7 @@ Supported flags:
 - `--body '<raw body>'`: replace the saved body content
 - `--timeout 5s`: override timeout
 - `--output ./response.bin`: write the response body to a file
+- `--status-only`: print only the HTTP response status code
 
 You can place the request ref before or after the flags:
 
@@ -363,6 +364,21 @@ CLI examples:
 ./postack run default/create-user --body '{"name":"Grace"}'
 ./postack run default/create-user --timeout 10s
 ./postack run default/users --output ./users.json
+./postack run default/health --status-only
+```
+
+### `postack run all`
+
+Run every saved request in `.postack.yaml` and print a summary table. Endpoint
+failures are reported inline and do not cause the overall command to fail.
+
+Example output:
+
+```text
+ENDPOINT         RESULT
+admin/audit-log  200
+default/health   204
+default/users    error: dial tcp timeout
 ```
 
 CLI override precedence is:
